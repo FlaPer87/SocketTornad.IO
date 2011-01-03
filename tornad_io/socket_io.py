@@ -326,7 +326,7 @@ class SocketIOProtocol(tornado.web.RequestHandler):
         """
         self.async_callback(self.handler.on_message)(message)
 
-    def on_close(self):
+    def on_connection_close(self):
         """Invoked when the protocol socket is closed."""
         self.debug("Shutting down heartbeat schedule; connection closed.")
         if self._heartbeat_timeout:
