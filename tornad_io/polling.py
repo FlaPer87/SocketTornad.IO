@@ -42,10 +42,18 @@ class PollingSocketIOHandler(SocketIOProtocol):
                 self.set_header('Access-Control-Allow-Origin', self.request.headers['Origin'])
                 if self.request.headers.has_key('Cookie'):
                     self.set_header('Access-Control-Allow-Credentials', True)
+                    
+                # Let's check for extra headers
+                if self.request.headers.has_key('Access-Control-Request-Headers'):
+                    extra_headers = self.get_extra_headers()
+                    if extra_headers:
+                        self.set_header('Access-Control-Allow-Headers', extra_headers)
                 return True
             else:
                 return False
         else:
+            # Needed for chrome and safari!
+            self.set_header('Access-Control-Allow-Origin', "*")
             return True
 
 class XHRMultiPartSocketIOHandler(PollingSocketIOHandler):
@@ -116,9 +124,6 @@ class XHRPollingSocketIOHandler(PollingSocketIOHandler):
 
     config = {
         'timeout': None, # No heartbeats in polling
-        'duration': 20000,
-        'closeTimeout': 8000,
-        'origins': [('*', '*')], # Tuple of (host, port)... * acceptable
     }
 
     @tornado.web.asynchronous

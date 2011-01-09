@@ -61,12 +61,12 @@ class SocketIOProtocol(tornado.web.RequestHandler):
     protocol = None
 
     _write_queue = []
-    # TODO - Pass config in at constructor and allow overrides of specific keys
-    config = {
+    
+    _base_config = {
         'timeout': 12000,
         'duration': 20000,
         'closeTimeout': 8000,
-        'origins': [('*', '*')], # Tuple of (host, port)... * acceptable
+        'origins': [('*', '*', '*')], # Tuple of (host, port, headers)... * acceptable
     }
 
     _heartbeats = 0
@@ -95,10 +95,25 @@ class SocketIOProtocol(tornado.web.RequestHandler):
                        message))
 
 
-    def __init__(self, handler):
+    def __init__(self, handler, config={}):
         self.handler = handler
         self.application = self.handler.application
         self.request = self.handler.request
+        
+        # In case configs wasn't defined
+        # Backward compatibility for old configs 
+        # definitions.
+        _config = getattr(self, 'config', {}) 
+        
+        # Lets update the class config with the one
+        # passed to the init method.
+        _config.update(config)
+        
+        # Lets keep the old self.config definition 
+        # assigning the _base_config to it and updating
+        # it with the custom configs.
+        self.config = self._base_config
+        self.config.update(_config)
 
     @property
     def message_queue(self):
@@ -200,19 +215,37 @@ class SocketIOProtocol(tornado.web.RequestHandler):
     def reset_heartbeat_timeout(self):
         pass
 
+    def get_allowed_origins(self, origin):
+        """Returns the origins config for this origin"""
+        origins = self.config.get('origins', [])
+        url = urlparse.urlparse(origin)
+        host = url.hostname
+        port = url.port
+        return filter(lambda t: (t[0] == '*' or t[0].lower() == host.lower()) and (t[1] == '*' or  t[1] == int(port)), origins)
+
     def verify_origin(self):
         """Header check, enforces CORS *IF* they sent an origin header"""
         origin = self.request.headers.get("Origin", None)
         if origin:
             self.debug("Verify Origin: %s" % origin)
-            origins = self.config['origins']
-            url = urlparse.urlparse(origin)
-            host = url.hostname
-            port = url.port
-            return filter(lambda t: (t[0] == '*' or t[0].lower() == host.lower()) and (t[1] == '*' or  t[1] == int(port)), origins)
-        else:
-            return True
+            return self.get_allowed_origins(origin)
+        return True
 
+    def get_extra_headers(self):
+        """Checks if the extra headers sent are allowed"""
+        origin = self.request.headers.get("Origin", None)
+        if origin:
+            origins = self.get_allowed_origins(origin)
+            headers = []
+            for origin in origins:
+                hds = (len(origin) >= 3 and origin[2]) or ""
+                if not hds:
+                    return
+                if hds[0] == '*':
+                    return  self.request.headers['Access-Control-Request-Headers']
+                headers += hds
+            return ','.join(set(headers))
+            
     def send(self, message, skip_queue=False):
         """Message to send data to the client.
         Encodes in Socket.IO protocol and
