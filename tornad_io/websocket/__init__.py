@@ -7,6 +7,8 @@ import tornado.ioloop
 import tornad_io
 import tornad_io.socket_io
 
+from tornad_io.utils.encoding import smart_str, smart_unicode
+
 class WebSocketIOHandler(tornad_io.socket_io.SocketIOProtocol, 
                          tornado.websocket.WebSocketHandler):
 
@@ -21,8 +23,9 @@ class WebSocketIOHandler(tornad_io.socket_io.SocketIOProtocol,
     def _on_end_delimiter(self, frame):
         """ Override the default on_message handler to decode first """
         if not self.client_terminated:
-            self.async_callback(self._on_message)(
-                    frame[:-1].decode("utf-8", "replace"))
+            self.async_callback(self._on_message)(smart_str(frame[:-1]))
+            # self.async_callback(self._on_message)(
+            #         frame[:-1].decode("utf-8", "replace"))
             self._receive_message()
 
     def on_open(self, *args, **kwargs):
@@ -38,7 +41,8 @@ class WebSocketIOHandler(tornad_io.socket_io.SocketIOProtocol,
         if isinstance(message, dict):
             message = tornado.escape.json_encode(message)
         if isinstance(message, unicode):
-            message = message.encode("utf-8")
+            message = smart_unicode(message)
+            # message = message.encode("utf-8")
         assert isinstance(message, str)
         self.stream.write("\x00" + message + "\xff")
 
