@@ -7,7 +7,7 @@ import tornado.ioloop
 import tornad_io
 import tornad_io.socket_io
 
-from tornad_io.utils.encoding import smart_str, smart_unicode
+from tornad_io.utils.encoding import smart_str
 
 class WebSocketIOHandler(tornad_io.socket_io.SocketIOProtocol, 
                          tornado.websocket.WebSocketHandler):
@@ -41,7 +41,7 @@ class WebSocketIOHandler(tornad_io.socket_io.SocketIOProtocol,
         if isinstance(message, dict):
             message = tornado.escape.json_encode(message)
         if isinstance(message, unicode):
-            message = smart_unicode(message)
+            message = smart_str(message)
             # message = message.encode("utf-8")
         assert isinstance(message, str)
         self.stream.write("\x00" + message + "\xff")
