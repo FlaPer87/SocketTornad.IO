@@ -74,8 +74,9 @@ class XHRMultiPartSocketIOHandler(PollingSocketIOHandler):
         self.set_header('Content-Type', 'text/plain')
         self.preflight()
         data = self.get_argument('data')
-        self.async_callback(self._on_message)(
-                data.decode("utf-8", "replace"))
+        self.async_callback(self._on_message)(smart_str(data))
+        # self.async_callback(self._on_message)(
+        #         data.decode("utf-8", "replace"))
         self.write('ok')
         self.finish()
 
@@ -107,8 +108,9 @@ class HTMLFileSocketIOHandler(PollingSocketIOHandler):
     def post(self, *args, **kwargs):
         self.set_header('Content-Type', 'text/plain')
         data = self.get_argument('data')
-        self.async_callback(self._on_message)(
-                data.decode("utf-8", "replace"))
+        self.async_callback(self._on_message)(smart_str(data))
+        # self.async_callback(self._on_message)(
+        #         data.decode("utf-8", "replace"))
         self.write('ok')
         self.finish()
 
