@@ -12,6 +12,8 @@ except:
     import json
 from decimal import Decimal
 
+from tornad_io.utils.encoding import smart_str
+
 class PollingSocketIOHandler(SocketIOProtocol):
     def __init__(self, handler):
         tornad_io.socket_io.SocketIOProtocol.__init__(self, handler)
@@ -151,8 +153,9 @@ class XHRPollingSocketIOHandler(PollingSocketIOHandler):
         data = self.get_argument('data')
         if not self.preflight():
             raise tornado.web.HTTPError(401, "unauthorized")
-        self.async_callback(self._on_message)(
-                data.decode("utf-8", "replace"))
+        self.async_callback(self._on_message)(smart_str(data))
+        # self.async_callback(self._on_message)(
+        #         data.decode("utf-8", "replace"))
         self.write('ok')
         self.finish()
 
