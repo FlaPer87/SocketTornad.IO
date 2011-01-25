@@ -208,7 +208,8 @@ class SocketIOProtocol(tornado.web.RequestHandler):
     def on_heartbeat(self, beat):
         if beat == self._heartbeats:
             #self.debug("[%s] Received a heartbeat... " % beat)
-            self.reset_heartbeat_timeout()
+            self._heartbeat()
+            self.reset_timeout()
         else:
             self.warning("Mismatch on heartbeat count.  Timeout may occur. Got %d but expected %d" % (beat, self._heartbeats)) # This logging method may race
 
@@ -359,7 +360,7 @@ class SocketIOProtocol(tornado.web.RequestHandler):
         """
         self.async_callback(self.handler.on_message)(message)
 
-    def on_connection_close(self):
+    def on_close(self):
         """Invoked when the protocol socket is closed."""
         self.debug("Shutting down heartbeat schedule; connection closed.")
         if self._heartbeat_timeout:
